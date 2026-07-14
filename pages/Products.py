@@ -5,14 +5,18 @@ from utils.formatter import format_currency
 
 from database.category_service import (
     get_all_categories,
-    create_category
+    create_category,
+    delete_category
 )
 
 from database.product_service import (
     get_all_products,
+    get_inactive_products,
+    get_product_by_name,
     create_product,
     update_product,
-    deactivate_product
+    deactivate_product,
+    restore_product
 )
 
 
@@ -83,6 +87,46 @@ category_map = {
     for category in categories
 }
 
+# ==========================================
+# CATEGORY MANAGEMENT
+# ==========================================
+
+st.divider()
+
+st.subheader("📂 Category Management")
+
+for category in categories:
+
+    with st.container(border=True):
+
+        col1, col2 = st.columns([4, 1])
+
+        with col1:
+
+            st.write(category["name"])
+
+        with col2:
+
+            if st.button(
+                "🗑 Delete",
+                key=f"delete_category_{category['id']}"
+            ):
+
+                try:
+
+                    delete_category(
+                        category["id"]
+                    )
+
+                    st.success(
+                        "Category deleted."
+                    )
+
+                    st.rerun()
+
+                except Exception as e:
+
+                    st.error(str(e))
 
 # ==========================================
 # ADD PRODUCT
@@ -140,23 +184,61 @@ with st.expander("➕ Add Product"):
 
                 try:
 
-                    create_product(
-                        name=product_name,
-                        category_id=category_map[
-                            selected_category
-                        ],
-                        price=int(price),
-                        minimum_stock=int(
-                            minimum_stock
-                        ),
-                        created_by=st.session_state.user_id
+                    existing_product = get_product_by_name(
+                        product_name
                     )
 
-                    st.success(
-                        "Product added successfully!"
-                    )
+                    if existing_product:
 
-                    st.rerun()
+                        if existing_product["is_active"]:
+
+                            st.error(
+                                "Product already exists."
+                            )
+
+                        else:
+
+                            restore_product(
+                                existing_product["id"]
+                            )
+
+                            update_product(
+                                product_id=existing_product["id"],
+                                name=product_name,
+                                category_id=category_map[
+                                    selected_category
+                                ],
+                                price=int(price),
+                                minimum_stock=int(
+                                    minimum_stock
+                                )
+                            )
+
+                            st.success(
+                                "Inactive product restored!"
+                            )
+
+                            st.rerun()
+
+                    else:
+
+                        create_product(
+                            name=product_name,
+                            category_id=category_map[
+                                selected_category
+                            ],
+                            price=int(price),
+                            minimum_stock=int(
+                                minimum_stock
+                            ),
+                            created_by=st.session_state.user_id
+                        )
+
+                        st.success(
+                            "Product added successfully!"
+                        )
+
+                        st.rerun()
 
                 except Exception as e:
 
@@ -172,6 +254,7 @@ st.divider()
 st.subheader("Product List")
 
 products = get_all_products()
+inactive_products = get_inactive_products()
 
 if not products:
 
@@ -349,3 +432,57 @@ else:
                     except Exception as e:
 
                         st.error(str(e))
+
+# ==========================================
+# INACTIVE PRODUCTS
+# ==========================================
+
+if inactive_products:
+
+    st.divider()
+
+    st.subheader("⚪ Inactive Products")
+
+    for product in inactive_products:
+
+        with st.container(border=True):
+
+            st.subheader(product["name"])
+
+            st.write(
+                f"Category: {product['categories']['name']}"
+            )
+
+            st.write(
+                f"Price: {format_currency(product['price'])}"
+            )
+
+            st.write(
+                f"Current Stock: {product['current_stock']}"
+            )
+
+            st.write(
+                f"Minimum Stock: {product['minimum_stock']}"
+            )
+
+            if st.button(
+                "♻️ Restore Product",
+                key=f"restore_{product['id']}",
+                use_container_width=True
+            ):
+
+                try:
+
+                    restore_product(
+                        product["id"]
+                    )
+
+                    st.success(
+                        f"{product['name']} restored!"
+                    )
+
+                    st.rerun()
+
+                except Exception as e:
+
+                    st.error(str(e))

@@ -27,6 +27,31 @@ def get_all_products(active_only=True):
 
     return response.data
 
+# =====================================
+# FIND PRODUCT BY NAME
+# =====================================
+
+def get_product_by_name(
+    name: str
+):
+
+    response = (
+        supabase
+        .table("products")
+        .select("*")
+        .ilike(
+            "name",
+            name.strip()
+        )
+        .limit(1)
+        .execute()
+    )
+
+    if response.data:
+
+        return response.data[0]
+
+    return None
 
 def create_product(
     name: str,
@@ -81,6 +106,53 @@ def deactivate_product(
         .table("products")
         .update({
             "is_active": False
+        })
+        .eq(
+            "id",
+            product_id
+        )
+        .execute()
+    )
+    
+# =====================================
+# INACTIVE PRODUCTS
+# =====================================
+
+def get_inactive_products():
+
+    response = (
+        supabase
+        .table("products")
+        .select("""
+            *,
+            categories (
+                id,
+                name
+            )
+        """)
+        .eq(
+            "is_active",
+            False
+        )
+        .order("name")
+        .execute()
+    )
+
+    return response.data
+
+# =====================================
+# RESTORE PRODUCT
+# =====================================
+
+def restore_product(
+    product_id: str
+):
+
+    return (
+        supabase
+        .table("products")
+        .update({
+            "is_active": True
         })
         .eq(
             "id",

@@ -37,6 +37,10 @@ def get_today_sales_summary():
         supabase
         .table("sales")
         .select("*")
+        .eq(
+            "is_deleted",
+            False
+        )
         .execute()
     )
 
@@ -104,7 +108,8 @@ def get_best_seller_today():
                 name
             ),
             sales (
-                created_at
+                created_at,
+                is_deleted
             )
         """)
         .execute()
@@ -117,9 +122,13 @@ def get_best_seller_today():
     product_totals = {}
 
     for item in items:
+        
+        if not item.get("sales"):
 
-        if not item.get(
-            "sales"
+            continue
+
+        if item["sales"].get(
+            "is_deleted"
         ):
             continue
 
@@ -184,6 +193,10 @@ def get_recent_dashboard_sales():
             desc=True
         )
         .limit(5)
+        .eq(
+            "is_deleted",
+            False
+        )
         .execute()
     )
 
@@ -203,6 +216,7 @@ def get_monthly_report(
         supabase
         .table("sales")
         .select("*")
+        .eq("is_deleted", False)    
         .execute()
     )
 
@@ -256,7 +270,8 @@ def get_monthly_report(
                 name
             ),
             sales (
-                created_at
+                created_at,
+                is_deleted
             )
         """)
         .execute()
@@ -269,6 +284,12 @@ def get_monthly_report(
         if not item.get(
             "sales"
         ):
+            continue
+        
+        if item["sales"].get(
+            "is_deleted"
+        ):
+            
             continue
 
         sale_date = (
@@ -335,6 +356,10 @@ def get_monthly_sales(
         .order(
             "created_at",
             desc=False
+        )
+        .eq(
+            "is_deleted",
+            False   
         )
         .execute()
     )
