@@ -6,7 +6,7 @@ from utils.datetime_helper import format_jakarta_datetime
 
 from database.report_service import (
     get_today_sales_summary,
-    get_low_stock_products,
+    get_dashboard_stock,
     get_best_seller_today,
     get_recent_dashboard_sales
 )
@@ -21,7 +21,7 @@ st.title("📊 Dashboard")
 
 summary = get_today_sales_summary()
 best_seller = get_best_seller_today()
-low_stock = get_low_stock_products()
+dashboard_stock = get_dashboard_stock()
 recent_sales = get_recent_dashboard_sales()
 
 # =====================================
@@ -124,39 +124,44 @@ else:
             )
 
 # =====================================
-# LOW STOCK
+# PRODUCT STOCK
 # =====================================
 
 st.divider()
 
-st.subheader("⚠️ Low Stock Products")
+st.subheader("📦 Product Stock")
 
-if not low_stock:
+stock_data = []
 
-    st.success(
-        "All products have sufficient stock."
-    )
+for product in dashboard_stock:
 
-else:
+    stock_data.append({
+        "Status": (
+            "⚠️"
+            if product["current_stock"] <= product["minimum_stock"]
+            else "✅"
+        ),
+        "Product": product["name"],
+        "Current Stock": product["current_stock"],
+        "Minimum Stock": product["minimum_stock"]
+    })
 
-    for product in low_stock:
-
-        with st.container(border=True):
-
-            col1, col2 = st.columns([4, 1])
-
-            with col1:
-
-                st.write(
-                    f"🥐 {product['name']}"
-                )
-
-            with col2:
-
-                st.write(
-                    f"[{product['current_stock']}]"
-                )
-
-            st.caption(
-                f"Minimum: {product['minimum_stock']}"
-            )
+st.dataframe(
+    stock_data,
+    hide_index=True,
+    use_container_width=True,
+    column_config={
+        "Status": st.column_config.TextColumn(
+            width="small"
+        ),
+        "Product": st.column_config.TextColumn(
+            width="large"
+        ),
+        "Current Stock": st.column_config.NumberColumn(
+            width="small"
+        ),
+        "Minimum Stock": st.column_config.NumberColumn(
+            width="small"
+        ),
+    },
+)

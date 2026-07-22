@@ -73,28 +73,39 @@ def get_today_sales_summary():
     }
 
 
-def get_low_stock_products():
+def get_dashboard_stock():
 
     response = (
         supabase
         .table("products")
-        .select("*")
+        .select(
+            """
+            id,
+            name,
+            current_stock,
+            minimum_stock
+            """
+        )
         .eq(
             "is_active",
             True
         )
-        .order("name")
+        .order(
+            "name"
+        )
         .execute()
     )
 
     products = response.data
 
-    return [
-        product
-        for product in products
-        if product["current_stock"]
-        <= product["minimum_stock"]
-    ]
+    products.sort(
+        key=lambda product: (
+            product["current_stock"] > product["minimum_stock"],
+            product["current_stock"]
+        )
+    )
+
+    return products
 
 
 def get_best_seller_today():
